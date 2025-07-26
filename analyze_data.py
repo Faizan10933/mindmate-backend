@@ -18,6 +18,7 @@ class Data_Processor:
         self.data['month'] = self.data['timestamp'].dt.month
         self.data['week'] = np.int64(self.data['timestamp'].dt.strftime('%U'))
         self.data['day'] = self.data['timestamp'].dt.day
+        self.data['transaction_hour'] = self.data['timestamp'].dt.hour
         self.data['week_day'] = self.data['timestamp'].dt.weekday
         self.data['binned_hour'] = self.data['transaction_hour'] // 3
         self.data['timestamp_lag'] = self.data['timestamp'].shift(1)
@@ -66,7 +67,6 @@ class Data_Processor:
             merchant = json_input.get('merchant', 'Unknown').lower()
             merchant_cat = json_input.get('merchant_category', 'Unknown').lower()
         except Exception as e:
-            print(json_input)
             raise e
 
         window = self.freq_per_day

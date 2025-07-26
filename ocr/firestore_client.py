@@ -28,7 +28,7 @@ def save_receipt_to_firestore(doc_id, data):
 def get_all_receipts():
     try:
         print("🔍 Fetching receipts from Firestore...")
-        receipts_ref = db.collection("receipts")
+        receipts_ref = db.collection("receipts_synthetic1000")
         docs = receipts_ref.stream()  # <-- likely blocking here
         results = [doc.to_dict() for doc in docs]
         print(f"✅ Retrieved {len(results)} receipts")

@@ -3,7 +3,12 @@ from pydantic import BaseModel
 from datetime import datetime
 import pandas as pd
 import numpy as np
+import json
 from typing import Dict, Tuple, Any
+import os
+import json
+import re
+import google.generativeai as genai
 
 # Your Data_Processor class (as provided)
 class Data_Processor:
@@ -132,3 +137,109 @@ async def analyze_transaction(transaction: TransactionInput):
         return response
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+    
+class EvaluationAgent:
+    '''
+    Agent to flag transaction based on stats and its pretrained knowledge
+    '''
+    def __init__(self):
+        GOOGLE_API_KEY = "AIzaSyA8HGldCViU0bKIdo7EtfH7D-HdkvFRKaw"
+        genai.configure(api_key=GOOGLE_API_KEY)
+
+        self.model = genai.GenerativeModel(model_name="gemini-1.5-flash-latest")
+
+    def eval(self, stats_output: Tuple, current_transaction: json)-> str:
+        prompt = '''
+        Generate a JSON object representing a single transaction from a user. The transaction should include realistic fields such as:
+        - user_id: A string like "user_001"
+        - merchant: e.g., "Domino's Pizza", "Starbucks"
+        - merchant_category: e.g., "Food & Beverage", "Retail", "Grocery"
+        - amount: A float, total transaction amount
+        - timestamp: ISO format, e.g., "2024-07-01T04:46:00"
+        - parsed: {
+            - items: A list of objects each with item and price
+            - subtotal: String sum of item prices
+            - order_number: String/number
+            - payment_method: e.g., "UPI", "Credit Card"
+            - location: e.g., "MG Road"
+            - timestamp: Human-readable datetime, same as above
+        }
+
+        Add a top-level field called "anomaly" which should be a *boolean*.  
+        If "anomaly" is true, include the following two additional fields:
+        - "anomaly_type": one of "stress eating", "impulse buying", "high frequency anomaly"
+        - "reason": a natural-language explanation grounded in behavioral and statistical evidence, drawing from these signals:
+
+        ---
+
+        ### Behavioral Heuristics:
+
+        1. *Stress Eating*  
+        - If timestamp is between *12 AM and 6 AM*  
+        - AND total amount is small or moderate  
+        - Then likely stress/emotional eating
+
+        2. *Impulse Buying*  
+        - If item count > 3  
+        - AND amount is unusually high compared to similar past transactions  
+        - OR includes multiple junk/snack items  
+        - Then flag as impulse buying
+
+        3. *High Frequency Anomaly*  
+        - If time gap from last transaction < 10 minutes  
+        - AND both are low-value  
+        - Then likely compulsive/spontaneous behavior
+
+        ---
+
+        ### Statistical Anomaly Signals to Use (pick 1–2):
+
+        - "Z_Rolling_Amt": z-score for current amount based on last 24 hrs
+        - "Z_Bin_Hour_Amt": z-score for current hour-bin (e.g. 3–6 AM)
+        - "Z_Merchant_Cat_Amt": z-score for current merchant category
+        - "Z_Merchant_Amt": z-score for this specific merchant
+
+        You can use z-thresholds like ±1.5 or ±2.0 to justify the reasoning:
+        > Example: "Transaction amount is significantly higher than the 24-hour merchant category average (z = +2.1), and includes 4 items, suggesting impulse buying."
+
+        ---
+
+        ### Example Output:
+
+        ```json
+        {
+        "user_id": "user_024",
+        "merchant": "Domino's Pizza",
+        "merchant_category": "Food & Beverage",
+        "amount": 18.75,
+        "timestamp": "2024-07-01T04:46:00",
+        "parsed": {
+            "items": [
+            {"item": "Pepperoni Pizza", "price": "9.99"},
+            {"item": "Choco Lava Cake", "price": "4.49"},
+            {"item": "Garlic Bread", "price": "4.27"}
+            ],
+            "subtotal": "18.75",
+            "order_number": "84",
+            "payment_method": "UPI",
+            "location": "MG Road",
+            "timestamp": "2024-07-01 04:46"
+        },
+        "anomaly": true,
+        "anomaly_type": "stress eating",
+        "reason": "Transaction occurred during off-peak hours (4:46 AM) and amount is moderately high. Z_Rolling_Amt = +1.8 suggests a deviation from regular behavior. Combined with item types (comfort food), this implies stress-induced spending."
+        }
+
+        ''' + f'''### Input stats: {stats_output}
+        ### Current transaction details: {current_transaction}
+        '''
+
+        try:
+            response = self.model.generate_content(prompt)
+            content = response.text.strip()
+
+            content = re.sub(r"^```json|```$", "", content.strip(), flags=re.MULTILINE).strip("` \n")
+            return json.loads(content)
+        except Exception as e:
+            return {"error": str(e), "raw_response": response.text if 'response' in locals() else None}
+            

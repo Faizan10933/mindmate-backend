@@ -3,7 +3,7 @@ from ocr.upload_receipt import upload_receipt_to_drive
 from ocr.extract_text import extract_text_from_doc
 from ocr.gemini_parser import extract_structured_receipt, generate_summary_from_receipts, answer_user_query_over_receipts
 from ocr.firestore_client import save_receipt_to_firestore, get_all_receipts, get_all_receipt_texts
-from analyze_data import Data_Processor
+from analytics.analyze_data import Data_Processor, EvaluationAgent
 from pydantic import BaseModel
 import pandas as pd
 
@@ -74,19 +74,23 @@ async def analyze_transaction(transaction: TransactionInput):
         result = processor.calculate_stats(input_data)
         
         # Format the response
-        z_scores, (freq_flag, freq_stats) = result
-        response = {
-            "z_scores": {
-                "rolling_amount": {"z_score": float(z_scores[0][0]), "stats": z_scores[0][1]},
-                "bin_hour_amount": {"z_score": float(z_scores[1][0]), "stats": z_scores[1][1]},
-                "merchant_cat_amount": {"z_score": float(z_scores[2][0]), "stats": z_scores[2][1]},
-                "merchant_amount": {"z_score": float(z_scores[3][0]), "stats": z_scores[3][1]},
-            },
-            "high_freq_low_volume": {
-                "flag": bool(freq_flag),
-                "stats": freq_stats
-            }
-        }
+        # z_scores, (freq_flag, freq_stats) = result
+        # response = {
+        #     "z_scores": {
+        #         "rolling_amount": {"z_score": float(z_scores[0][0]), "stats": z_scores[0][1]},
+        #         "bin_hour_amount": {"z_score": float(z_scores[1][0]), "stats": z_scores[1][1]},
+        #         "merchant_cat_amount": {"z_score": float(z_scores[2][0]), "stats": z_scores[2][1]},
+        #         "merchant_amount": {"z_score": float(z_scores[3][0]), "stats": z_scores[3][1]},
+        #     },
+        #     "high_freq_low_volume": {
+        #         "flag": bool(freq_flag),
+        #         "stats": freq_stats
+        #     }
+        # }
+
+        evaluate = EvaluationAgent()
+        response = evaluate.eval(result, input_data)
+        
         return response
     
     except Exception as e:

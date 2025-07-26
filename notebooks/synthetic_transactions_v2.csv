@@ -1,0 +1,69 @@
+Transaction_id,date,hour_of_day,week,day_of_week,merchant_name,merchant_category,amount
+T001,2025-05-01,8,18,Thursday,Walmart,Groceries,45.23
+T002,2025-05-01,12,18,Thursday,Starbucks,Coffee Shop,6.50
+T003,2025-05-02,18,18,Friday,Target,Retail,22.10
+T004,2025-05-03,14,18,Saturday,McDonald's,Fast Food,12.75
+T005,2025-05-03,15,18,Saturday,Nike,Clothing,89.99
+T006,2025-05-04,10,18,Sunday,Whole Foods,Groceries,67.80
+T007,2025-05-05,19,19,Monday,Pizza Hut,Restaurants,18.90
+T008,2025-05-06,9,19,Tuesday,Amazon,Electronics,120.00
+T009,2025-05-07,13,19,Wednesday,Trader Joe's,Groceries,34.56
+T010,2025-05-08,20,19,Thursday,Taco Bell,Fast Food,9.25
+T011,2025-05-09,11,19,Friday,Best Buy,Electronics,199.99
+T012,2025-05-10,16,19,Saturday,Chick-fil-A,Fast Food,14.30
+T013,2025-05-10,17,19,Saturday,H&M,Clothing,45.00
+T014,2025-05-11,12,19,Sunday,Panera Bread,Restaurants,16.40
+T015,2025-05-12,7,20,Monday,Kroger,Groceries,52.10
+T016,2025-05-13,21,20,Tuesday,Domino's Pizza,Restaurants,22.50
+T017,2025-05-14,14,20,Wednesday,Apple Store,Electronics,250.00
+T018,2025-05-15,10,20,Thursday,Costco,Groceries,78.90
+T019,2025-05-16,22,20,Friday,McDonald's,Fast Food,11.20
+T020,2025-05-16,23,20,Friday,Wendy's,Fast Food,10.80
+T021,2025-05-17,15,20,Saturday,Zara,Clothing,75.00
+T022,2025-05-18,13,20,Sunday,Starbucks,Coffee Shop,5.75
+T023,2025-05-19,18,21,Monday,Subway,Fast Food,8.90
+T024,2025-05-20,11,21,Tuesday,Target,Retail,19.99
+T025,2025-05-21,19,21,Wednesday,Olive Garden,Restaurants,25.60
+T026,2025-05-22,12,21,Thursday,Safeway,Groceries,61.45
+T027,2025-05-23,20,21,Friday,Chipotle,Fast Food,13.25
+T028,2025-05-24,14,21,Saturday,Adidas,Clothing,110.00
+T029,2025-05-25,16,21,Sunday,Whole Foods,Groceries,72.30
+T030,2025-05-26,9,22,Monday,Starbucks,Coffee Shop,7.20
+T031,2025-05-27,17,22,Tuesday,Best Buy,Electronics,89.50
+T032,2025-05-28,13,22,Wednesday,Taco Bell,Fast Food,10.10
+T033,2025-05-29,21,22,Thursday,Domino's Pizza,Restaurants,19.75
+T034,2025-05-30,11,22,Friday,Walmart,Groceries,48.90
+T035,2025-05-31,15,22,Saturday,Nordstrom,Clothing,150.00
+T036,2025-05-31,16,22,Saturday,Apple Store,Electronics,300.00
+T037,2025-06-01,10,22,Sunday,Kroger,Groceries,55.60
+T038,2025-06-02,19,23,Monday,Chick-fil-A,Fast Food,12.45
+T039,2025-06-03,12,23,Tuesday,Target,Retail,23.75
+T040,2025-06-04,20,23,Wednesday,Panera Bread,Restaurants,17.80
+T041,2025-06-05,8,23,Thursday,Safeway,Groceries,49.20
+T042,2025-06-06,22,23,Friday,McDonald's,Fast Food,11.50
+T043,2025-06-06,23,23,Friday,Wendy's,Fast Food,9.80
+T044,2025-06-07,14,23,Saturday,H&M,Clothing,60.00
+T045,2025-06-08,11,23,Sunday,Starbucks,Coffee Shop,6.25
+T046,2025-06-09,18,24,Monday,Subway,Fast Food,9.10
+T047,2025-06-10,13,24,Tuesday,Amazon,Electronics,145.00
+T048,2025-06-11,19,24,Wednesday,Olive Garden,Restaurants,24.90
+T049,2025-06-12,10,24,Thursday,Trader Joe's,Groceries,41.30
+T050,2025-06-13,21,24,Friday,Chipotle,Fast Food,12.75
+T051,2025-06-14,15,24,Saturday,Nike,Clothing,95.00
+T052,2025-06-15,12,24,Sunday,Whole Foods,Groceries,68.40
+T053,2025-06-16,20,25,Monday,Taco Bell,Fast Food,10.50
+T054,2025-06-17,9,25,Tuesday,Best Buy,Electronics,210.00
+T055,2025-06-18,17,25,Wednesday,Domino's Pizza,Restaurants,21.25
+T056,2025-06-19,11,25,Thursday,Walmart,Groceries,53.80
+T057,2025-06-20,22,25,Friday,McDonald's,Fast Food,11.90
+T058,2025-06-20,23,25,Friday,Wendy's,Fast Food,10.20
+T059,2025-06-21,14,25,Saturday,Zara,Clothing,80.00
+T060,2025-06-22,13,25,Sunday,Starbucks,Coffee Shop,6.80
+T061,2025-06-23,18,26,Monday,Subway,Fast Food,9.40
+T062,2025-06-24,12,26,Tuesday,Target,Retail,21.50
+T063,2025-06-25,19,26,Wednesday,Olive Garden,Restaurants,26.10
+T064,2025-06-26,10,26,Thursday,Safeway,Groceries,57.60
+T065,2025-06-27,20,26,Friday,Chipotle,Fast Food,13.50
+T066,2025-06-28,15,26,Saturday,Adidas,Clothing,120.00
+T067,2025-06-29,16,26,Sunday,Whole Foods,Groceries,70.20
+T068,2025-06-30,9,27,Monday,Starbucks,Coffee Shop,7.50

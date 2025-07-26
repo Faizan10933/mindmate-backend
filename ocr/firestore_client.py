@@ -8,16 +8,21 @@ from datetime import datetime
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "firestore-credentials.json"
 
 db = firestore.Client()
-receipts_collection = db.collection("receipts")
+receipts_collection = db.collection("receipts_synthetic1000")
 
-def save_receipt_to_firestore(doc_id, text, parsed):
-    data = {
-        "doc_id": doc_id,
-        "text": text,
-        "parsed": parsed,
-        "created_at": datetime.utcnow().isoformat()
+# def save_receipt_to_firestore(doc_id, text, parsed):
+#     data = {
+#         "doc_id": doc_id,
+#         "text": text,
+#         "parsed": parsed,
+#         "created_at": datetime.utcnow().isoformat()
 
-    }
+#     }
+#     receipts_collection.document(doc_id).set(data)
+
+def save_receipt_to_firestore(doc_id, data):
+    data["doc_id"] = doc_id
+    data["created_at"] = datetime.utcnow().isoformat()
     receipts_collection.document(doc_id).set(data)
 
 def get_all_receipts():
@@ -33,13 +38,16 @@ def get_all_receipts():
         return {"error": str(e)}
 
 
+import json
 
 def get_all_receipt_texts():
     docs = receipts_collection.stream()
     all_texts = []
     for doc in docs:
         data = doc.to_dict()
-        parsed = data.get("parsed", {})
-        all_texts.append(str(parsed))  # or use json.dumps(parsed) for cleaner format
+        try:
+            all_texts.append(json.dumps(data, ensure_ascii=False))
+        except Exception as e:
+            print(f"❌ Skipping invalid doc {doc.id}: {e}")
     return "\n---\n".join(all_texts)
 

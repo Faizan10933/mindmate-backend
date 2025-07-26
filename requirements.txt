@@ -1,0 +1,21 @@
+# FastAPI + ASGI server
+fastapi
+uvicorn[standard]
+
+# Async file handling
+aiofiles
+
+# Google APIs
+google-api-python-client
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+
+# For working with service accounts
+google-auth
+
+# MIME upload for Drive
+httplib2
+
+# Optional: If you want to parse JSON results more cleanly
+python-multipart

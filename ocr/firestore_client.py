@@ -21,7 +21,17 @@ def save_receipt_to_firestore(doc_id, text, parsed):
     receipts_collection.document(doc_id).set(data)
 
 def get_all_receipts():
-    return [doc.to_dict() for doc in receipts_collection.stream()]
+    try:
+        print("🔍 Fetching receipts from Firestore...")
+        receipts_ref = db.collection("receipts")
+        docs = receipts_ref.stream()  # <-- likely blocking here
+        results = [doc.to_dict() for doc in docs]
+        print(f"✅ Retrieved {len(results)} receipts")
+        return results
+    except Exception as e:
+        print(f"❌ Firestore error: {e}")
+        return {"error": str(e)}
+
 
 
 def get_all_receipt_texts():

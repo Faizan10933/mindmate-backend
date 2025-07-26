@@ -104,3 +104,31 @@ Provide a clear and helpful answer based only on the receipt data.
         return response.text.strip()
     except Exception as e:
         return f"Error: {e}"
+    
+
+def detect_impulsive_behavior(receipts: list) -> str:
+    prompt = f"""
+You are a behavioral finance assistant.
+
+The user’s receipts are listed below. Your job is to analyze and detect signs of **impulsive or emotional spending**.
+
+Instructions:
+1. Compare older vs newer purchases.
+2. Look for spikes in frequency, amount, or categories like coffee, snacks, fast food, treats.
+3. Identify patterns like late-night orders or multiple small-value purchases in a short span.
+4. Give insights on what may be impulsive behavior.
+
+Respond in JSON format:
+- "alerts": List of identified impulsive patterns
+- "suggestions": Advice to improve spending habits
+- "summary": Optional text explanation
+
+Receipts:
+{receipts}
+"""
+    try:
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        return f"Error: {e}"
+

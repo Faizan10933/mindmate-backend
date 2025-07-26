@@ -4,7 +4,19 @@ from ocr.extract_text import extract_text_from_doc
 from ocr.gemini_parser import extract_structured_receipt, generate_summary_from_receipts, answer_user_query_over_receipts
 from ocr.firestore_client import save_receipt_to_firestore, get_all_receipts, get_all_receipt_texts
 
+
+
 app = FastAPI()
+
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Or restrict to ["http://localhost:3000"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.post("/upload-receipt")
 async def upload_receipt(file: UploadFile = File(...)):
@@ -29,6 +41,15 @@ def ask_receipt_question(question: str = Body(..., embed=True)):
     all_text = get_all_receipt_texts()
     answer = answer_user_query_over_receipts(question, all_text)
     return {"question": question, "answer": answer}
+
+
+from ocr.gemini_parser import detect_impulsive_behavior
+
+@app.get("/impulse-check")
+def impulse_alerts():
+    receipts = get_all_receipts()
+    analysis = detect_impulsive_behavior(receipts)
+    return {"impulse_analysis": analysis}
 
 
 # @app.post("/insert")

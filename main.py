@@ -3,7 +3,16 @@ from ocr.upload_receipt import upload_receipt_to_drive
 from ocr.extract_text import extract_text_from_doc
 from ocr.gemini_parser import extract_structured_receipt, generate_summary_from_receipts, answer_user_query_over_receipts
 from ocr.firestore_client import save_receipt_to_firestore, get_all_receipts, get_all_receipt_texts
+from analyze_data import Data_Processor
+from pydantic import BaseModel
+import pandas as pd
 
+# Pydantic model for input validation
+class TransactionInput(BaseModel):
+    merchant: str
+    merchant_category: str
+    amount: float
+    timestamp: str
 
 
 app = FastAPI()
@@ -50,6 +59,38 @@ def impulse_alerts():
     receipts = get_all_receipts()
     analysis = detect_impulsive_behavior(receipts)
     return {"impulse_analysis": analysis}
+
+@app.post("/analyze-transaction/", response_model=dict)
+async def analyze_transaction(transaction: TransactionInput):
+    try:
+        # Fetch data from Firestore
+        receipts = get_all_receipts()
+        
+        # Initialize Data_Processor
+        processor = Data_Processor(receipts)
+        
+        # Process the input JSON
+        input_data = transaction.dict()
+        result = processor.calculate_stats(input_data)
+        
+        # Format the response
+        z_scores, (freq_flag, freq_stats) = result
+        response = {
+            "z_scores": {
+                "rolling_amount": {"z_score": float(z_scores[0][0]), "stats": z_scores[0][1]},
+                "bin_hour_amount": {"z_score": float(z_scores[1][0]), "stats": z_scores[1][1]},
+                "merchant_cat_amount": {"z_score": float(z_scores[2][0]), "stats": z_scores[2][1]},
+                "merchant_amount": {"z_score": float(z_scores[3][0]), "stats": z_scores[3][1]},
+            },
+            "high_freq_low_volume": {
+                "flag": bool(freq_flag),
+                "stats": freq_stats
+            }
+        }
+        return response
+    
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 import json
 import uuid

@@ -51,6 +51,23 @@ def impulse_alerts():
     analysis = detect_impulsive_behavior(receipts)
     return {"impulse_analysis": analysis}
 
+import json
+import uuid
+
+@app.post("/insert")
+def insert_receipts():
+    try:
+        with open("transactions_modified.json", "r") as f:
+            data = json.load(f)
+
+        for receipt in data:
+            doc_id = str(uuid.uuid4())  # Unique ID
+            save_receipt_to_firestore(doc_id, receipt)
+
+        return {"status": "success", "inserted": len(data)}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 
 # @app.post("/insert")
 # def insert_receipts():

@@ -4,7 +4,7 @@ import json
 import re
 import google.generativeai as genai
 
-GOOGLE_API_KEY = "AIzaSyA8HGldCViU0bKIdo7EtfH7D-HdkvFRKaw"
+GOOGLE_API_KEY = "AIzaSyCq4k-_rJVMpaF8znEIJNFAsMhJj_3OmNk"
 genai.configure(api_key=GOOGLE_API_KEY)
 
 model = genai.GenerativeModel(model_name="gemini-1.5-flash-latest")
@@ -16,18 +16,28 @@ You are a receipt parsing assistant. Extract structured JSON from the following 
 If any fields are missing, skip them. Return output in this JSON format:
 
 {{
-  "restaurant": "",
-  "location": "",
-  "order_number": "",
-  "items": [],
-  "subtotal": "",
-  "vat": "",
-  "total": "",
-  "payment_method": "",
-  "served_by": "",
-  "timestamp": ""
+  "user_id": "",
+  "merchant": "",
+  "merchant_category": "",
+  "amount": 0.0,
+  "timestamp": "",
+  "parsed": {{
+    "items": [
+      {{
+        "item": "",
+        "price": ""
+      }}
+    ],
+    "subtotal": "",
+    "order_number": "",
+    "payment_method": "",
+    "location": "",
+  }}
 }}
 
+## timestamp value always respon in "%Y-%m-%dT%H:%M:%S.%f" date-time format- example "timestamp": "2025-06-20T23:58:37.567979"
+## Convert amount to INR always.
+## Try to infer the merchant category through merchant name or line of business, eg. Blue Tokai falls in Coffee Shops category.
 Receipt Text:
 {text}
 """
@@ -131,4 +141,30 @@ Receipts:
         return response.text
     except Exception as e:
         return f"Error: {e}"
+
+
+def summarize_receipt_for_pass(resp: dict) -> str:
+    # reasoning = resp.get("final", {}).get("raw_response", "")
+    
+    # # Clean out markdown/code block formatting if present
+    # reasoning = reasoning.replace("```json", "").replace("```", "").strip()
+
+    prompt = f"""
+You are a helpful assistant that generates short wallet pass notifications based on receipt analysis.
+
+Summarize this transaction analysis into 1–2 short friendly lines for a mobile notification.
+Avoid technical terms or explanations. Be clear and natural.
+
+Receipt AI Analysis:
+{str(resp)}
+
+Summary:
+"""
+
+    try:
+        response = model.generate_content(prompt)
+        return response.text.strip()
+    except Exception as e:
+        return "Transaction saved and analyzed."
+
 

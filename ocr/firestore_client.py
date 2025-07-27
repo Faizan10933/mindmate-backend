@@ -8,7 +8,7 @@ from datetime import datetime
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "firestore-credentials.json"
 
 db = firestore.Client()
-receipts_collection = db.collection("receipts_synthetic1000")
+receipts_collection = db.collection("receipts_synthetic10001234")
 
 # def save_receipt_to_firestore(doc_id, text, parsed):
 #     data = {
@@ -28,7 +28,7 @@ def save_receipt_to_firestore(doc_id, data):
 def get_all_receipts():
     try:
         print("🔍 Fetching receipts from Firestore...")
-        receipts_ref = db.collection("receipts_synthetic1000")
+        receipts_ref = db.collection("receipts_synthetic10001234")
         docs = receipts_ref.stream()  # <-- likely blocking here
         results = [doc.to_dict() for doc in docs]
         print(f"✅ Retrieved {len(results)} receipts")

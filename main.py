@@ -1,18 +1,11 @@
 from fastapi import FastAPI, UploadFile, File, Body
 from ocr.upload_receipt import upload_receipt_to_drive
 from ocr.extract_text import extract_text_from_doc
-from ocr.gemini_parser import extract_structured_receipt, generate_summary_from_receipts, answer_user_query_over_receipts
+from ocr.gemini_parser import extract_structured_receipt, generate_summary_from_receipts, answer_user_query_over_receipts, summarize_receipt_for_pass
 from ocr.firestore_client import save_receipt_to_firestore, get_all_receipts, get_all_receipt_texts
 from analytics.analyze_data import Data_Processor, EvaluationAgent
 from pydantic import BaseModel
 import pandas as pd
-
-# Pydantic model for input validation
-class TransactionInput(BaseModel):
-    merchant: str
-    merchant_category: str
-    amount: float
-    timestamp: str
 
 
 app = FastAPI()
@@ -32,8 +25,14 @@ async def upload_receipt(file: UploadFile = File(...)):
     doc_id = await upload_receipt_to_drive(file)
     text = extract_text_from_doc(doc_id)
     parsed = extract_structured_receipt(text)
-    save_receipt_to_firestore(doc_id, text, parsed)
-    return {"doc_id": doc_id, "text": text, "parsed": parsed}
+    print(parsed)
+    resp=analyze_transaction(parsed)
+    save_receipt_to_firestore(doc_id, parsed)
+    print(resp)
+    summary = summarize_receipt_for_pass(resp)
+    url=generate_wallet_pass("Faizan", summary)
+    print("Add to Wallet URL:", url)
+    return {"doc_id": doc_id, "analyzed": resp, "final": summary}
 
 @app.get("/receipts")
 def list_receipts():
@@ -60,8 +59,7 @@ def impulse_alerts():
     analysis = detect_impulsive_behavior(receipts)
     return {"impulse_analysis": analysis}
 
-@app.post("/analyze-transaction/", response_model=dict)
-async def analyze_transaction(transaction: TransactionInput):
+def analyze_transaction(transaction):
     try:
         # Fetch data from Firestore
         receipts = get_all_receipts()
@@ -69,32 +67,14 @@ async def analyze_transaction(transaction: TransactionInput):
         # Initialize Data_Processor
         processor = Data_Processor(receipts)
         
-        # Process the input JSON
-        input_data = transaction.dict()
-        result = processor.calculate_stats(input_data)
-        
-        # Format the response
-        # z_scores, (freq_flag, freq_stats) = result
-        # response = {
-        #     "z_scores": {
-        #         "rolling_amount": {"z_score": float(z_scores[0][0]), "stats": z_scores[0][1]},
-        #         "bin_hour_amount": {"z_score": float(z_scores[1][0]), "stats": z_scores[1][1]},
-        #         "merchant_cat_amount": {"z_score": float(z_scores[2][0]), "stats": z_scores[2][1]},
-        #         "merchant_amount": {"z_score": float(z_scores[3][0]), "stats": z_scores[3][1]},
-        #     },
-        #     "high_freq_low_volume": {
-        #         "flag": bool(freq_flag),
-        #         "stats": freq_stats
-        #     }
-        # }
+        result = processor.calculate_stats(transaction)
 
         evaluate = EvaluationAgent()
-        response = evaluate.eval(result, input_data)
-        
+        response = evaluate.eval(result, transaction)
         return response
     
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise e
 
 import json
 import uuid
@@ -102,7 +82,7 @@ import uuid
 @app.post("/insert")
 def insert_receipts():
     try:
-        with open("transactions_modified.json", "r") as f:
+        with open("500.json", "r") as f:
             data = json.load(f)
 
         for receipt in data:
@@ -112,6 +92,13 @@ def insert_receipts():
         return {"status": "success", "inserted": len(data)}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+    
+from ocr.google_wallet_client import generate_wallet_pass
+
+@app.post("/pass-push")
+def push_pass():
+    url = generate_wallet_pass("John Doe", "You've earned 500 points this month!")
+    print("Add to Wallet URL:", url)
 
 
 # @app.post("/insert")

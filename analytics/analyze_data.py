@@ -19,6 +19,7 @@ class Data_Processor:
         # self.data.drop(columns='Unnamed: 0', inplace=True, errors='ignore')
         self.data.set_index('timestamp', drop=False, inplace=True)
         self.data['amount'] = np.log(self.data['amount'])
+        # self.data['timestamp'] = pd.to_datetime(self.data['timestamp'].apply(lambda x: pd)
         self.data['timestamp'] = pd.to_datetime(self.data['timestamp'])
         self.data['month'] = self.data['timestamp'].dt.month
         self.data['week'] = np.int64(self.data['timestamp'].dt.strftime('%U'))
@@ -48,7 +49,7 @@ class Data_Processor:
         velo_df = data.groupby(['day', 'binned_hour'], as_index=False).agg(
             avg_amount=('amount', 'mean'), avg_time_diff=('time_diff', 'mean'))
         velo_df[['day', 'binned_hour']] = velo_df[['day', 'binned_hour']].astype('int32')
-        time_delta = timestamp - data.loc[data.index.max(), 'timestamp']
+        time_delta = timestamp - data.iloc[len(data)-1, data.columns.get_loc('timestamp')]
         time_delta = time_delta.total_seconds()
         time_avg = velo_df['avg_time_diff'].mean()
         time_std = velo_df['avg_time_diff'].std()
@@ -96,142 +97,80 @@ class Data_Processor:
         z_merchant_amount = self.calculate_z_score(total_amount, merchant_mean, merchant_std, 'Z_Merchant_Amount')
 
         return ((z_rolling_amount, z_bin_hr_amount, z_merchant_cat_amount, z_merchant_amount), (hig_freq_low_volume_flag, hig_freq_low_volume_stats))
-
-# Pydantic model for input validation
-class TransactionInput(BaseModel):
-    merchant: str
-    merchant_category: str
-    amount: float
-    timestamp: str
-
-# FastAPI app
-app = FastAPI(title="Transaction Analysis API", description="API to analyze transactions for anomalies")
-
-@app.post("/analyze-transaction/", response_model=dict)
-async def analyze_transaction(transaction: TransactionInput):
-    try:
-        # Fetch data from Firestore
-        data = pd.read_csv('synthetic_transactions_v1.csv')
-        
-        # Initialize Data_Processor
-        processor = Data_Processor(data)
-        
-        # Process the input JSON
-        input_data = transaction.dict()
-        result = processor.calculate_stats(input_data)
-        
-        # Format the response
-        z_scores, (freq_flag, freq_stats) = result
-        response = {
-            "z_scores": {
-                "rolling_amount": {"z_score": float(z_scores[0][0]), "stats": z_scores[0][1]},
-                "bin_hour_amount": {"z_score": float(z_scores[1][0]), "stats": z_scores[1][1]},
-                "merchant_cat_amount": {"z_score": float(z_scores[2][0]), "stats": z_scores[2][1]},
-                "merchant_amount": {"z_score": float(z_scores[3][0]), "stats": z_scores[3][1]},
-            },
-            "high_freq_low_volume": {
-                "flag": bool(freq_flag),
-                "stats": freq_stats
-            }
-        }
-        return response
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
     
 class EvaluationAgent:
     '''
     Agent to flag transaction based on stats and its pretrained knowledge
     '''
     def __init__(self):
-        GOOGLE_API_KEY = "AIzaSyA8HGldCViU0bKIdo7EtfH7D-HdkvFRKaw"
+        GOOGLE_API_KEY = "AIzaSyCq4k-_rJVMpaF8znEIJNFAsMhJj_3OmNk"
         genai.configure(api_key=GOOGLE_API_KEY)
 
         self.model = genai.GenerativeModel(model_name="gemini-1.5-flash-latest")
 
     def eval(self, stats_output: Tuple, current_transaction: json)-> str:
-        prompt = '''
-        Generate a JSON object representing a single transaction from a user. The transaction should include realistic fields such as:
-        - user_id: A string like "user_001"
-        - merchant: e.g., "Domino's Pizza", "Starbucks"
-        - merchant_category: e.g., "Food & Beverage", "Retail", "Grocery"
-        - amount: A float, total transaction amount
-        - timestamp: ISO format, e.g., "2024-07-01T04:46:00"
-        - parsed: {
-            - items: A list of objects each with item and price
-            - subtotal: String sum of item prices
-            - order_number: String/number
-            - payment_method: e.g., "UPI", "Credit Card"
-            - location: e.g., "MG Road"
-            - timestamp: Human-readable datetime, same as above
-        }
+        prompt = """
+        You're an expert in analysing financial spending behaviour of individuals and have years of research knowledge
+        in this field, provided with the transaction receipt from an ididvidual and some important stats from his historical
+        transaction data you can understand whether it is a case of any of the following:
+        Stress Eating or Impulsive buying.
+        While judging you take into account the fields from the current transaction receipt like,
+        merchant category, merchant, time, amount, etc along with historical transactional stats provided of the User.
 
-        Add a top-level field called "anomaly" which should be a *boolean*.  
-        If "anomaly" is true, include the following two additional fields:
+        Add a top-level include the following three additional fields:
+        - "anomaly": Boolean
         - "anomaly_type": one of "stress eating", "impulse buying", "high frequency anomaly"
-        - "reason": a natural-language explanation grounded in behavioral and statistical evidence, drawing from these signals:
+        - "reason": The reason should be non mathematical/statistical and rather more on psychological reasoning for why the user might have done orders signifying stress eating or 
+            why it could be case of impulsive buying in brief (within 2 lines).
 
-        ---
 
-        ### Behavioral Heuristics:
+        The stats of historical transaction will be a summary in a tuple of tuples object.
+        There will be 5 tuples inside a tuple of two items where the first index item would be z-score of current value 
+        and at the second index we will have avg and mean value of a prticular attribute as sentence having some information
+        on the filter/subset data set used. 
 
-        1. *Stress Eating*  
-        - If timestamp is between *12 AM and 6 AM*  
-        - AND total amount is small or moderate  
-        - Then likely stress/emotional eating
+        (
+        (Z_Rolling_Amt, "mean and average of rolling window over last 24 hrs of all transactions in all category"), 
+        (Z_Bin_Hour_Amt, "mean and average is calculated based on transactiosn of last 24hrs for the particular hour slot in which current transaction falls in."), 
+        (Z_Merchant_Cat_Amt, "mean and average is calculated based on transactiosn of last 24hrs for the particular merchant cat"),
+        (Z_Merchant_Amt, "mean and average is calculated based on transactiosn of last 24hrs for the particular merchant")
+        ),
+        (
+        high_frequency_low_volume_flag: boolean (decided by logic if the transaction is within vey little time gap with respectto last transaction and trana=saction amount is low),  
+        "mean and standard deviation of time elapsed(sec) between current and last transaction, average transaction amount respectively in last 24 hrs transactions filtered on the hour slot in which the current transaction is falling in." 
+        )
 
-        2. *Impulse Buying*  
-        - If item count > 3  
-        - AND amount is unusually high compared to similar past transactions  
-        - OR includes multiple junk/snack items  
-        - Then flag as impulse buying
+        # 1st index of tuple has z-score for the curent amount and 2nd index has the std and meanon which the z-score was calculated and keywords signifying the subset data used. 
+        # the hour slot is between 0-7 (3 hour interval)
+        # use you understanding to define the z-score threshold for each of these attributes in tuple, in some cases it could be +1, -1 or +1.5, -1.5, +2, -2 etc.  
+        # If the anomaly flag is 'False' then reason should be 'Normal Transaction' and anomaly type should be 'None' else provide the reason.
 
-        3. *High Frequency Anomaly*  
-        - If time gap from last transaction < 10 minutes  
-        - AND both are low-value  
-        - Then likely compulsive/spontaneous behavior
+        EXAMPLE-
+            {
+            "user_id": "user_024",
+            "merchant": "Domino's Pizza",
+            "merchant_category": "Food & Beverage",
+            "amount": 18.75,
+            "timestamp": "2024-07-01T04:46:00",
+            "parsed": {
+                "items": [
+                {"item": "Pepperoni Pizza", "price": "9.99"},
+                {"item": "Choco Lava Cake", "price": "4.49"},
+                {"item": "Garlic Bread", "price": "4.27"}
+                ],
+                "subtotal": "18.75",
+                "order_number": "84",
+                "payment_method": "UPI",
+                "location": "MG Road",
+                "timestamp": "2024-07-01 04:46"
+            },
+            "anomaly": false,
+            "anomaly_type": "None",
+            "reason": "Normal Transaction"
+        }""" + f'''Historical stats: {str(stats_output)}
+        Current transaction details: {str(current_transaction)}
 
-        ---
-
-        ### Statistical Anomaly Signals to Use (pick 1–2):
-
-        - "Z_Rolling_Amt": z-score for current amount based on last 24 hrs
-        - "Z_Bin_Hour_Amt": z-score for current hour-bin (e.g. 3–6 AM)
-        - "Z_Merchant_Cat_Amt": z-score for current merchant category
-        - "Z_Merchant_Amt": z-score for this specific merchant
-
-        You can use z-thresholds like ±1.5 or ±2.0 to justify the reasoning:
-        > Example: "Transaction amount is significantly higher than the 24-hour merchant category average (z = +2.1), and includes 4 items, suggesting impulse buying."
-
-        ---
-
-        ### Example Output:
-
-        ```json
-        {
-        "user_id": "user_024",
-        "merchant": "Domino's Pizza",
-        "merchant_category": "Food & Beverage",
-        "amount": 18.75,
-        "timestamp": "2024-07-01T04:46:00",
-        "parsed": {
-            "items": [
-            {"item": "Pepperoni Pizza", "price": "9.99"},
-            {"item": "Choco Lava Cake", "price": "4.49"},
-            {"item": "Garlic Bread", "price": "4.27"}
-            ],
-            "subtotal": "18.75",
-            "order_number": "84",
-            "payment_method": "UPI",
-            "location": "MG Road",
-            "timestamp": "2024-07-01 04:46"
-        },
-        "anomaly": true,
-        "anomaly_type": "stress eating",
-        "reason": "Transaction occurred during off-peak hours (4:46 AM) and amount is moderately high. Z_Rolling_Amt = +1.8 suggests a deviation from regular behavior. Combined with item types (comfort food), this implies stress-induced spending."
-        }
-
-        ''' + f'''### Input stats: {stats_output}
-        ### Current transaction details: {current_transaction}
+        ### 
         '''
 
         try:
@@ -239,7 +178,7 @@ class EvaluationAgent:
             content = response.text.strip()
 
             content = re.sub(r"^```json|```$", "", content.strip(), flags=re.MULTILINE).strip("` \n")
-            return json.loads(content)
+            return content
         except Exception as e:
             return {"error": str(e), "raw_response": response.text if 'response' in locals() else None}
             

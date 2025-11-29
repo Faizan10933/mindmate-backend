@@ -103,7 +103,7 @@ class EvaluationAgent:
     Agent to flag transaction based on stats and its pretrained knowledge
     '''
     def __init__(self):
-        GOOGLE_API_KEY = "AIzaSyCq4k-_rJVMpaF8znEIJNFAsMhJj_3OmNk"
+        GOOGLE_API_KEY = ""
         genai.configure(api_key=GOOGLE_API_KEY)
 
         self.model = genai.GenerativeModel(model_name="gemini-1.5-flash-latest")
